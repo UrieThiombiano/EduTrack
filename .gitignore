@@ -1,0 +1,39 @@
+# Dépendances
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+build/
+.turbo/
+
+# Variables d'environnement (NE JAMAIS COMMITTER)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+
+# Prisma (généré et migrations locales)
+apps/api/src/generated/
+# NB: committer les migrations en production
+
+# Tests
+coverage/
+
+# Temp
+*.tmp
+*.temp

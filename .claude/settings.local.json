@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx --prefix apps/api prisma validate)",
+      "PowerShell($env:PATH += \";$env:APPDATA\\\\npm\"; cd \"C:\\\\Users\\\\Urie\\\\OneDrive\\\\Desktop\\\\edutrack\\\\apps\\\\api\"; & npx prisma validate 2>&1)",
+      "Bash(node_modules/.bin/prisma validate *)",
+      "Bash(for mod in inscriptions attributions emplois-du-temps types-evaluation periodes-evaluation evaluations notes; do *)",
+      "Bash(dir /s /b \"C:\\\\Users\\\\Urie\\\\OneDrive\\\\Desktop\\\\edutrack\\\\apps\\\\api\\\\src\")",
+      "Bash(dir \"C:\\\\Users\\\\Urie\\\\OneDrive\\\\Desktop\\\\edutrack\\\\apps\\\\web\\\\src\")"
+    ]
+  }
+}

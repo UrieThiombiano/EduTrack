@@ -1,0 +1,539 @@
+// ================================================================
+// PUKRI EduTrack — Schéma Prisma (PostgreSQL 16)
+// Modèles : 24  |  Relations : 47 FK
+// Régénérer après modif : pnpm prisma:generate
+// Nouvelle migration    : pnpm prisma:migrate
+// ================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ================================================================
+// DOMAINE 1 — Identité & Sécurité
+// ================================================================
+
+model Etablissement {
+  id_etablissement    Int      @id @default(autoincrement())
+  nom                 String   @db.VarChar(200)
+  code_etablissement  String   @unique @db.VarChar(50)
+  adresse             String?  @db.Text
+  telephone           String?  @db.VarChar(20)
+  email               String?  @db.VarChar(150)
+  logo_url            String?  @db.VarChar(500)
+  type_etablissement  String?  @db.VarChar(50)
+  pays                String   @default("Burkina Faso") @db.VarChar(100)
+  ville               String?  @db.VarChar(100)
+  est_actif           Boolean  @default(true)
+  date_creation       DateTime @default(now())
+  date_modification   DateTime @updatedAt
+
+  // Relations
+  utilisateurs      Utilisateur[]
+  annees_scolaires  AnneeScolaire[]
+  niveaux           Niveau[]
+  matieres          Matiere[]
+  types_evaluation  TypeEvaluation[]
+
+  @@map("etablissement")
+}
+
+model Role {
+  id_role     Int      @id @default(autoincrement())
+  libelle     String   @unique @db.VarChar(50)
+  description String?  @db.Text
+  est_actif   Boolean  @default(true)
+
+  utilisateurs Utilisateur[]
+
+  @@map("role")
+}
+
+model Utilisateur {
+  id_utilisateur     Int       @id @default(autoincrement())
+  id_etablissement   Int
+  id_role            Int
+  nom                String    @db.VarChar(100)
+  prenom             String    @db.VarChar(100)
+  email              String?   @db.VarChar(150)
+  telephone          String?   @db.VarChar(20)
+  mot_de_passe_hash  String    @db.VarChar(255)
+  photo_url          String?   @db.VarChar(500)
+  est_actif          Boolean   @default(true)
+  derniere_connexion DateTime?
+  date_creation      DateTime  @default(now())
+  date_modification  DateTime  @updatedAt
+
+  etablissement Etablissement @relation(fields: [id_etablissement], references: [id_etablissement], onDelete: Restrict)
+  role          Role          @relation(fields: [id_role], references: [id_role], onDelete: Restrict)
+
+  // Profils spécialisés 1:1
+  enseignant Enseignant?
+  eleve      Eleve?
+  parent     Parent?
+
+  // Relations N
+  sanctions_auteur     Sanction[]     @relation("SanctionAuteur")
+  notifs_destinataire  Notification[] @relation("NotifDestinataire")
+  notifs_expediteur    Notification[] @relation("NotifExpediteur")
+
+  @@unique([id_etablissement, email])
+  @@map("utilisateur")
+}
+
+// ================================================================
+// DOMAINE 2 — Acteurs
+// ================================================================
+
+model Enseignant {
+  id_enseignant          Int       @id @default(autoincrement())
+  id_utilisateur         Int       @unique
+  matricule              String    @unique @db.VarChar(50)
+  specialite             String?   @db.VarChar(150)
+  grade                  String?   @db.VarChar(100)
+  date_prise_de_fonction DateTime? @db.Date
+  est_actif              Boolean   @default(true)
+
+  utilisateur Utilisateur @relation(fields: [id_utilisateur], references: [id_utilisateur], onDelete: Cascade)
+
+  classes_titulaire  Classe[]                @relation("EnseignantTitulaire")
+  attributions       AttributionEnseignant[]
+  notes_saisies      Note[]                  @relation("EnseignantSaisie")
+  absences_declarees Absence[]               @relation("EnseignantDeclarant")
+  lignes_bulletin    LigneBulletin[]
+
+  @@map("enseignant")
+}
+
+model Eleve {
+  id_eleve                 Int       @id @default(autoincrement())
+  id_utilisateur           Int       @unique
+  matricule                String    @unique @db.VarChar(50)
+  date_naissance           DateTime? @db.Date
+  lieu_naissance           String?   @db.VarChar(150)
+  sexe                     String?   @db.Char(1)
+  numero_extrait_naissance String?   @db.VarChar(100)
+  est_actif                Boolean   @default(true)
+
+  utilisateur Utilisateur @relation(fields: [id_utilisateur], references: [id_utilisateur], onDelete: Cascade)
+
+  liens_parents LienParentEleve[]
+  inscriptions  Inscription[]
+  notes         Note[]
+  absences      Absence[]
+  sanctions     Sanction[]
+  bulletins     Bulletin[]
+  rapports_ia   RapportIA[]
+
+  @@map("eleve")
+}
+
+model Parent {
+  id_parent      Int     @id @default(autoincrement())
+  id_utilisateur Int     @unique
+  profession     String? @db.VarChar(150)
+  adresse        String? @db.Text
+  est_actif      Boolean @default(true)
+
+  utilisateur   Utilisateur       @relation(fields: [id_utilisateur], references: [id_utilisateur], onDelete: Cascade)
+  liens_enfants LienParentEleve[]
+
+  @@map("parent")
+}
+
+model LienParentEleve {
+  id_lien               Int     @id @default(autoincrement())
+  id_parent             Int
+  id_eleve              Int
+  type_lien             String? @db.VarChar(50)
+  est_contact_principal Boolean @default(false)
+
+  parent Parent @relation(fields: [id_parent], references: [id_parent], onDelete: Cascade)
+  eleve  Eleve  @relation(fields: [id_eleve], references: [id_eleve], onDelete: Cascade)
+
+  @@unique([id_parent, id_eleve])
+  @@map("lien_parent_eleve")
+}
+
+// ================================================================
+// DOMAINE 3 — Structure Académique
+// ================================================================
+
+model AnneeScolaire {
+  id_annee_scolaire Int      @id @default(autoincrement())
+  id_etablissement  Int
+  libelle           String   @db.VarChar(20)
+  date_debut        DateTime @db.Date
+  date_fin          DateTime @db.Date
+  est_courante      Boolean  @default(false)
+  est_archivee      Boolean  @default(false)
+
+  etablissement Etablissement @relation(fields: [id_etablissement], references: [id_etablissement], onDelete: Restrict)
+
+  periodes     Periode[]
+  classes      Classe[]
+  attributions AttributionEnseignant[]
+
+  @@unique([id_etablissement, libelle])
+  @@map("annee_scolaire")
+}
+
+model Periode {
+  id_periode        Int       @id @default(autoincrement())
+  id_annee_scolaire Int
+  type_periode      String    @db.VarChar(20)
+  numero_ordre      Int
+  libelle           String?   @db.VarChar(50)
+  date_debut        DateTime? @db.Date
+  date_fin          DateTime? @db.Date
+
+  annee_scolaire      AnneeScolaire       @relation(fields: [id_annee_scolaire], references: [id_annee_scolaire], onDelete: Cascade)
+  periodes_evaluation PeriodeEvaluation[]
+  bulletins           Bulletin[]
+  rapports_ia         RapportIA[]
+
+  @@map("periode")
+}
+
+model Niveau {
+  id_niveau        Int     @id @default(autoincrement())
+  id_etablissement Int
+  libelle          String  @db.VarChar(100)
+  ordre_affichage  Int?
+  cycle            String? @db.VarChar(50)
+  est_actif        Boolean @default(true)
+
+  etablissement Etablissement @relation(fields: [id_etablissement], references: [id_etablissement], onDelete: Restrict)
+
+  classes      Classe[]
+  coefficients Coefficient[]
+
+  @@unique([id_etablissement, libelle])
+  @@map("niveau")
+}
+
+model Classe {
+  id_classe               Int     @id @default(autoincrement())
+  id_annee_scolaire       Int
+  id_niveau               Int
+  id_enseignant_titulaire Int?
+  code_classe             String  @db.VarChar(20)
+  libelle                 String  @db.VarChar(100)
+  capacite_max            Int?
+  salle_principale        String? @db.VarChar(50)
+  est_actif               Boolean @default(true)
+
+  annee_scolaire       AnneeScolaire @relation(fields: [id_annee_scolaire], references: [id_annee_scolaire], onDelete: Restrict)
+  niveau               Niveau        @relation(fields: [id_niveau], references: [id_niveau], onDelete: Restrict)
+  enseignant_titulaire Enseignant?   @relation("EnseignantTitulaire", fields: [id_enseignant_titulaire], references: [id_enseignant], onDelete: SetNull)
+
+  inscriptions Inscription[]
+  attributions AttributionEnseignant[]
+  absences     Absence[]
+  sanctions    Sanction[]
+  bulletins    Bulletin[]
+
+  @@map("classe")
+}
+
+model Matiere {
+  id_matiere       Int     @id @default(autoincrement())
+  id_etablissement Int
+  code_matiere     String  @unique @db.VarChar(20)
+  libelle          String  @db.VarChar(150)
+  description      String? @db.Text
+  est_actif        Boolean @default(true)
+
+  etablissement   Etablissement           @relation(fields: [id_etablissement], references: [id_etablissement], onDelete: Restrict)
+  coefficients    Coefficient[]
+  attributions    AttributionEnseignant[]
+  lignes_bulletin LigneBulletin[]
+
+  @@map("matiere")
+}
+
+model Coefficient {
+  id_coefficient Int     @id @default(autoincrement())
+  id_matiere     Int
+  id_niveau      Int
+  valeur         Decimal @db.Decimal(4, 2)
+
+  matiere Matiere @relation(fields: [id_matiere], references: [id_matiere], onDelete: Cascade)
+  niveau  Niveau  @relation(fields: [id_niveau], references: [id_niveau], onDelete: Cascade)
+
+  @@unique([id_matiere, id_niveau])
+  @@map("coefficient")
+}
+
+// ================================================================
+// DOMAINE 4 — Pédagogie
+// ================================================================
+
+model Inscription {
+  id_inscription   Int       @id @default(autoincrement())
+  id_eleve         Int
+  id_classe        Int
+  date_inscription DateTime  @default(now()) @db.Date
+  statut           String    @default("inscrit") @db.VarChar(20)
+  date_sortie      DateTime? @db.Date
+  motif_sortie     String?   @db.Text
+
+  eleve  Eleve  @relation(fields: [id_eleve], references: [id_eleve], onDelete: Cascade)
+  classe Classe @relation(fields: [id_classe], references: [id_classe], onDelete: Cascade)
+
+  @@unique([id_eleve, id_classe])
+  @@map("inscription")
+}
+
+model AttributionEnseignant {
+  id_attribution    Int     @id @default(autoincrement())
+  id_enseignant     Int
+  id_classe         Int
+  id_matiere        Int
+  id_annee_scolaire Int
+  est_actif         Boolean @default(true)
+
+  enseignant     Enseignant    @relation(fields: [id_enseignant], references: [id_enseignant], onDelete: Restrict)
+  classe         Classe        @relation(fields: [id_classe], references: [id_classe], onDelete: Restrict)
+  matiere        Matiere       @relation(fields: [id_matiere], references: [id_matiere], onDelete: Restrict)
+  annee_scolaire AnneeScolaire @relation(fields: [id_annee_scolaire], references: [id_annee_scolaire], onDelete: Restrict)
+
+  emplois_du_temps EmploiDuTemps[]
+  evaluations      Evaluation[]
+
+  @@unique([id_enseignant, id_classe, id_matiere, id_annee_scolaire])
+  @@map("attribution_enseignant")
+}
+
+model EmploiDuTemps {
+  id_emploi      Int       @id @default(autoincrement())
+  id_attribution Int
+  jour_semaine   Int
+  heure_debut    DateTime  @db.Time(6)
+  heure_fin      DateTime  @db.Time(6)
+  salle          String?   @db.VarChar(50)
+  date_effective DateTime? @db.Date
+  est_annule     Boolean   @default(false)
+
+  attribution AttributionEnseignant @relation(fields: [id_attribution], references: [id_attribution], onDelete: Cascade)
+  absences    Absence[]
+
+  @@map("emploi_du_temps")
+}
+
+// ================================================================
+// DOMAINE 5 — Évaluations & Notes
+// ================================================================
+
+model TypeEvaluation {
+  id_type_evaluation      Int      @id @default(autoincrement())
+  id_etablissement        Int
+  libelle                 String   @db.VarChar(100)
+  ponderation_pourcentage Decimal? @db.Decimal(5, 2)
+  est_actif               Boolean  @default(true)
+
+  etablissement Etablissement @relation(fields: [id_etablissement], references: [id_etablissement], onDelete: Restrict)
+  evaluations   Evaluation[]
+
+  @@map("type_evaluation")
+}
+
+model PeriodeEvaluation {
+  id_periode_evaluation Int       @id @default(autoincrement())
+  id_periode            Int
+  libelle               String?   @db.VarChar(100)
+  date_debut            DateTime? @db.Date
+  date_fin              DateTime? @db.Date
+
+  periode     Periode      @relation(fields: [id_periode], references: [id_periode], onDelete: Cascade)
+  evaluations Evaluation[]
+
+  @@map("periode_evaluation")
+}
+
+model Evaluation {
+  id_evaluation         Int       @id @default(autoincrement())
+  id_attribution        Int
+  id_periode_evaluation Int
+  id_type_evaluation    Int
+  intitule              String?   @db.VarChar(200)
+  note_maximale         Decimal   @default(20) @db.Decimal(5, 2)
+  date_evaluation       DateTime? @db.Date
+  statut                String    @default("brouillon") @db.VarChar(20)
+  date_creation         DateTime  @default(now())
+  date_modification     DateTime  @updatedAt
+
+  attribution        AttributionEnseignant @relation(fields: [id_attribution], references: [id_attribution], onDelete: Restrict)
+  periode_evaluation PeriodeEvaluation     @relation(fields: [id_periode_evaluation], references: [id_periode_evaluation], onDelete: Restrict)
+  type_evaluation    TypeEvaluation        @relation(fields: [id_type_evaluation], references: [id_type_evaluation], onDelete: Restrict)
+
+  notes Note[]
+
+  @@map("evaluation")
+}
+
+model Note {
+  id_note              Int       @id @default(autoincrement())
+  id_evaluation        Int
+  id_eleve             Int
+  id_enseignant_saisie Int
+  valeur_note          Decimal?  @db.Decimal(5, 2)
+  est_absent           Boolean   @default(false)
+  commentaire          String?   @db.Text
+  date_saisie          DateTime  @default(now())
+  date_modification    DateTime  @updatedAt
+
+  evaluation        Evaluation @relation(fields: [id_evaluation], references: [id_evaluation], onDelete: Cascade)
+  eleve             Eleve      @relation(fields: [id_eleve], references: [id_eleve], onDelete: Cascade)
+  enseignant_saisie Enseignant @relation("EnseignantSaisie", fields: [id_enseignant_saisie], references: [id_enseignant], onDelete: Restrict)
+
+  @@unique([id_evaluation, id_eleve])
+  @@map("note")
+}
+
+// ================================================================
+// DOMAINE 6 — Vie Scolaire
+// ================================================================
+
+model Absence {
+  id_absence           Int       @id @default(autoincrement())
+  id_eleve             Int
+  id_emploi_du_temps   Int
+  id_enseignant        Int
+  id_classe            Int
+  type_absence         String    @db.VarChar(20)
+  est_justifie         Boolean   @default(false)
+  motif_justification  String?   @db.Text
+  notification_envoyee Boolean   @default(false)
+  date_absence         DateTime  @db.Date
+  heure_absence        DateTime? @db.Time(6)
+  date_creation        DateTime  @default(now())
+
+  eleve           Eleve         @relation(fields: [id_eleve], references: [id_eleve], onDelete: Cascade)
+  emploi_du_temps EmploiDuTemps @relation(fields: [id_emploi_du_temps], references: [id_emploi], onDelete: Restrict)
+  enseignant      Enseignant    @relation("EnseignantDeclarant", fields: [id_enseignant], references: [id_enseignant], onDelete: Restrict)
+  classe          Classe        @relation(fields: [id_classe], references: [id_classe], onDelete: Restrict)
+
+  @@map("absence")
+}
+
+model Sanction {
+  id_sanction      Int       @id @default(autoincrement())
+  id_eleve         Int
+  id_classe        Int
+  id_auteur        Int
+  type_sanction    String    @db.VarChar(50)
+  motif            String    @db.Text
+  date_sanction    DateTime  @db.Date
+  date_debut_effet DateTime? @db.Date
+  date_fin_effet   DateTime? @db.Date
+  observations     String?   @db.Text
+  date_creation    DateTime  @default(now())
+
+  eleve  Eleve       @relation(fields: [id_eleve], references: [id_eleve], onDelete: Cascade)
+  classe Classe      @relation(fields: [id_classe], references: [id_classe], onDelete: Restrict)
+  auteur Utilisateur @relation("SanctionAuteur", fields: [id_auteur], references: [id_utilisateur], onDelete: Restrict)
+
+  @@map("sanction")
+}
+
+// ================================================================
+// DOMAINE 7 — Communication
+// ================================================================
+
+model Notification {
+  id_notification   Int       @id @default(autoincrement())
+  id_destinataire   Int
+  id_expediteur     Int?
+  type_notification String    @db.VarChar(50)
+  canal             String    @db.VarChar(20)
+  titre             String?   @db.VarChar(200)
+  contenu           String    @db.Text
+  est_lu            Boolean   @default(false)
+  est_envoye        Boolean   @default(false)
+  date_envoi        DateTime?
+  date_lecture      DateTime?
+  metadata          Json?
+  date_creation     DateTime  @default(now())
+
+  destinataire Utilisateur  @relation("NotifDestinataire", fields: [id_destinataire], references: [id_utilisateur], onDelete: Cascade)
+  expediteur   Utilisateur? @relation("NotifExpediteur", fields: [id_expediteur], references: [id_utilisateur], onDelete: SetNull)
+
+  @@map("notification")
+}
+
+// ================================================================
+// DOMAINE 9 — Bulletins & Rapports IA
+// ================================================================
+
+model Bulletin {
+  id_bulletin           Int       @id @default(autoincrement())
+  id_eleve              Int
+  id_periode            Int
+  id_classe             Int
+  moyenne_generale      Decimal?  @db.Decimal(5, 2)
+  rang                  Int?
+  total_eleves_classe   Int?
+  total_absences        Int       @default(0)
+  total_retards         Int       @default(0)
+  appreciation_generale String?   @db.Text
+  decision_conseil      String?   @db.VarChar(100)
+  fichier_pdf_url       String?   @db.VarChar(500)
+  date_generation       DateTime?
+  est_publie            Boolean   @default(false)
+  date_creation         DateTime  @default(now())
+
+  eleve   Eleve   @relation(fields: [id_eleve], references: [id_eleve], onDelete: Cascade)
+  periode Periode @relation(fields: [id_periode], references: [id_periode], onDelete: Restrict)
+  classe  Classe  @relation(fields: [id_classe], references: [id_classe], onDelete: Restrict)
+
+  lignes LigneBulletin[]
+
+  @@unique([id_eleve, id_periode])
+  @@map("bulletin")
+}
+
+model LigneBulletin {
+  id_ligne_bulletin       Int      @id @default(autoincrement())
+  id_bulletin             Int
+  id_matiere              Int
+  id_enseignant           Int
+  moyenne_matiere         Decimal? @db.Decimal(5, 2)
+  coefficient             Decimal? @db.Decimal(4, 2)
+  points_ponderes         Decimal? @db.Decimal(7, 2)
+  rang_matiere            Int?
+  note_min_classe         Decimal? @db.Decimal(5, 2)
+  note_max_classe         Decimal? @db.Decimal(5, 2)
+  appreciation_enseignant String?  @db.Text
+
+  bulletin  Bulletin   @relation(fields: [id_bulletin], references: [id_bulletin], onDelete: Cascade)
+  matiere   Matiere    @relation(fields: [id_matiere], references: [id_matiere], onDelete: Restrict)
+  enseignant Enseignant @relation(fields: [id_enseignant], references: [id_enseignant], onDelete: Restrict)
+
+  @@unique([id_bulletin, id_matiere])
+  @@map("ligne_bulletin")
+}
+
+model RapportIA {
+  id_rapport_ia     Int       @id @default(autoincrement())
+  id_eleve          Int
+  id_periode        Int
+  forces            Json?
+  faiblesses        Json?
+  recommandations   Json?
+  evolution_recente Json?
+  score_risque      Decimal?  @db.Decimal(5, 2)
+  niveau_risque     String?   @db.VarChar(20)
+  date_generation   DateTime  @default(now())
+  version_modele    String?   @db.VarChar(50)
+
+  eleve   Eleve   @relation(fields: [id_eleve], references: [id_eleve], onDelete: Cascade)
+  periode Periode @relation(fields: [id_periode], references: [id_periode], onDelete: Restrict)
+
+  @@map("rapport_ia")
+}

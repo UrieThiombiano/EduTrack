@@ -1,0 +1,20 @@
+{
+  "name": "edutrack",
+  "private": true,
+  "version": "0.1.0",
+  "description": "PUKRI EduTrack — Plateforme SaaS de suivi scolaire",
+  "scripts": {
+    "dev": "concurrently -n API,WEB -c blue,green \"pnpm dev:api\" \"pnpm dev:web\"",
+    "dev:api": "pnpm --filter @edutrack/api dev",
+    "dev:web": "pnpm --filter @edutrack/web dev",
+    "build": "pnpm --filter @edutrack/api build && pnpm --filter @edutrack/web build",
+    "test": "pnpm --filter @edutrack/api test",
+    "prisma:generate": "pnpm --filter @edutrack/api exec prisma generate",
+    "prisma:migrate": "pnpm --filter @edutrack/api exec prisma migrate dev",
+    "prisma:studio": "pnpm --filter @edutrack/api exec prisma studio",
+    "prisma:seed": "pnpm --filter @edutrack/api exec ts-node prisma/seed.ts"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
