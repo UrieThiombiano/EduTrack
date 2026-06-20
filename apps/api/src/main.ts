@@ -6,6 +6,7 @@ import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { SuperAdminService } from './modules/super-admin/super-admin.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -30,7 +31,9 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalFilters(new AllExceptionsFilter());
+  // Filtre global avec injection du service d'alertes PUKRI
+  const superAdminService = app.get(SuperAdminService);
+  app.useGlobalFilters(new AllExceptionsFilter(superAdminService));
   app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
 
   const swaggerConfig = new DocumentBuilder()
@@ -39,6 +42,7 @@ async function bootstrap() {
     .setVersion('1.0')
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')
     .addTag('auth')
+    .addTag('pukri / super-admin')
     .addTag('eleves')
     .addTag('enseignants')
     .addTag('classes')
@@ -46,6 +50,8 @@ async function bootstrap() {
     .addTag('notes')
     .addTag('absences')
     .addTag('bulletins')
+    .addTag('rapports-ia')
+    .addTag('notifications')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);

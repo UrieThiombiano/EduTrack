@@ -1,15 +1,15 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Positive } from 'class-validator';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, IsPositive } from 'class-validator';
 
 export class CreateLienParentEleveDto {
   @ApiProperty({ example: 1 })
   @IsInt()
-  @Positive()
+  @IsPositive()
   id_parent: number;
 
   @ApiProperty({ example: 1 })
   @IsInt()
-  @Positive()
+  @IsPositive()
   id_eleve: number;
 
   @ApiPropertyOptional({ example: 'père', enum: ['père', 'mère', 'tuteur', 'tutrice', 'autre'] })

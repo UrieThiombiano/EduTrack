@@ -1,5 +1,5 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, Positive } from 'class-validator';
+﻿import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsInt, IsOptional, IsString, IsPositive } from 'class-validator';
 import { Type } from 'class-transformer';
 import { QueryDto } from '../../../common/dto/query.dto';
 
@@ -8,7 +8,7 @@ export class QueryUtilisateurDto extends QueryDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Positive()
+  @IsPositive()
   id_role?: number;
 
   @ApiPropertyOptional({ enum: ['true', 'false'] })

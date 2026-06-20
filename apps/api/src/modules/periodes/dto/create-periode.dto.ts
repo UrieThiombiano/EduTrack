@@ -1,10 +1,10 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min, Positive } from 'class-validator';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsDateString, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min, IsPositive } from 'class-validator';
 
 export class CreatePeriodeDto {
   @ApiProperty({ example: 1 })
   @IsInt()
-  @Positive()
+  @IsPositive()
   id_annee_scolaire: number;
 
   @ApiProperty({ example: 'trimestre', enum: ['trimestre', 'semestre'] })

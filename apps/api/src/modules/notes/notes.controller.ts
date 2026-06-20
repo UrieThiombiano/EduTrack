@@ -65,7 +65,7 @@ export class NotesController {
   @Roles('enseignant', 'administration', 'directeur')
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Corriger une note (brouillon ou validé — impossible si archivé)' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: Partial<CreateNoteDto>, @CurrentUser() user: JwtPayload) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: Omit<Partial<CreateNoteDto>, 'id_eleve'>, @CurrentUser() user: JwtPayload) {
     return this.service.update(id, dto, user.etablissementId);
   }
 

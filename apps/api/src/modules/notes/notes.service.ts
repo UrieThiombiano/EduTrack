@@ -10,7 +10,7 @@ export class NotesService {
   async findByEvaluation(evaluationId: number, etablissementId: number) {
     const evaluation = await this.prisma.evaluation.findFirst({
       where: { id_evaluation: evaluationId, attribution: { annee_scolaire: { id_etablissement: etablissementId } } },
-      include: { attribution: { select: { id_classe: true, note_maximale: true, id_matiere: true } } },
+      include: { attribution: { select: { id_classe: true, id_matiere: true } } },
     });
     if (!evaluation) throw new NotFoundException(`Évaluation #${evaluationId} introuvable`);
 
@@ -143,7 +143,7 @@ export class NotesService {
     return { count: results.length, message: `${results.length} note(s) enregistrée(s)` };
   }
 
-  async update(id: number, dto: Partial<CreateNoteDto> & { id_eleve?: never }, etablissementId: number) {
+  async update(id: number, dto: Omit<Partial<CreateNoteDto>, 'id_eleve'>, etablissementId: number) {
     const note = await this.findOne(id, etablissementId);
 
     if (note.evaluation.statut === 'archive') {

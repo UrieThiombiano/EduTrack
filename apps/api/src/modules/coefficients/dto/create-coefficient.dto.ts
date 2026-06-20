@@ -1,15 +1,15 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNumber, IsPositive, Max, Min, Positive } from 'class-validator';
+﻿import { ApiProperty } from '@nestjs/swagger';
+import { IsInt, IsNumber, IsPositive, Max, Min } from 'class-validator';
 
 export class CreateCoefficientDto {
   @ApiProperty({ example: 1 })
   @IsInt()
-  @Positive()
+  @IsPositive()
   id_matiere: number;
 
   @ApiProperty({ example: 1 })
   @IsInt()
-  @Positive()
+  @IsPositive()
   id_niveau: number;
 
   @ApiProperty({ example: 3, minimum: 0.5, maximum: 10 })

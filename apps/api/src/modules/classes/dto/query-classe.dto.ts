@@ -1,5 +1,5 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, Positive } from 'class-validator';
+﻿import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsInt, IsOptional, IsPositive } from 'class-validator';
 import { Type } from 'class-transformer';
 import { QueryDto } from '../../../common/dto/query.dto';
 
@@ -8,13 +8,13 @@ export class QueryClasseDto extends QueryDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Positive()
+  @IsPositive()
   id_annee_scolaire?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Positive()
+  @IsPositive()
   id_niveau?: number;
 }

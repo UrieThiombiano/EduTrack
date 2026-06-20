@@ -27,6 +27,8 @@ import { SanctionsModule } from './modules/sanctions/sanctions.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { BulletinsModule } from './modules/bulletins/bulletins.module';
 import { RapportsIaModule } from './modules/rapports-ia/rapports-ia.module';
+import { SuperAdminModule } from './modules/super-admin/super-admin.module';
+import { EspaceParentModule } from './modules/espace-parent/espace-parent.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -68,6 +70,9 @@ import configuration from './config/configuration';
     NotificationsModule,
     BulletinsModule,
     RapportsIaModule,
+    // ── PUKRI & Espaces dédiés ───────────────────────────────────
+    SuperAdminModule,
+    EspaceParentModule,
   ],
 })
 export class AppModule {}

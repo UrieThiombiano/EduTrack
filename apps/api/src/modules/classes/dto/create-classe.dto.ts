@@ -1,15 +1,15 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Positive } from 'class-validator';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, IsPositive } from 'class-validator';
 
 export class CreateClasseDto {
   @ApiProperty({ example: 1 })
   @IsInt()
-  @Positive()
+  @IsPositive()
   id_annee_scolaire: number;
 
   @ApiProperty({ example: 1 })
   @IsInt()
-  @Positive()
+  @IsPositive()
   id_niveau: number;
 
   @ApiProperty({ example: 'TC-A' })
@@ -27,7 +27,7 @@ export class CreateClasseDto {
   @ApiPropertyOptional({ example: 45 })
   @IsOptional()
   @IsInt()
-  @Positive()
+  @IsPositive()
   capacite_max?: number;
 
   @ApiPropertyOptional({ example: 'Salle 12' })
@@ -39,6 +39,6 @@ export class CreateClasseDto {
   @ApiPropertyOptional({ description: 'ID de l\'enseignant titulaire' })
   @IsOptional()
   @IsInt()
-  @Positive()
+  @IsPositive()
   id_enseignant_titulaire?: number;
 }
